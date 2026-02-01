@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Supabase Test</title>
+  <style>
+    body { font-family: 'IBM Plex Mono', monospace; background: #FAFAFA; padding: 40px; }
+    .card { background: #FFF; border: 1px solid #E5E5E5; padding: 20px; margin: 16px 0; }
+    .success { background: #D4EDDA; border-color: #28a745; }
+    .error { background: #F8D7DA; border-color: #dc3545; }
+    pre { background: #1A1A1A; color: #0f0; padding: 12px; overflow: auto; font-size: 11px; }
+    button { padding: 10px 20px; background: #0066FF; color: #FFF; border: none; cursor: pointer; font-family: inherit; }
+    button:hover { background: #0052CC; }
+    h3 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>Supabase Connection Test</h1>
+  
+  <div class="card" id="test1">
+    <h3>1. Test Direct API Call</h3>
+    <button onclick="testSupabase()">Run Test</button>
+    <pre id="result1">Click button to test...</pre>
+  </div>
+
+  <script>
+    const URL = 'https://erhvmlxdcplrhmmuboxo.supabase.co';
+    const KEY = 'sb_publishable_Lt7xsPkx9HGvh_udcekpxw_CmnP_zI4';
+
+    async function testSupabase() {
+      const result = document.getElementById('result1');
+      result.textContent = 'Testing...';
+      
+      try {
+        const response = await fetch(
+          URL + '/rest/v1/galleries?is_active=eq.true&select=*',
+          {
+            headers: {
+              'apikey': KEY,
+              'Authorization': 'Bearer ' + KEY,
+              'Content-Type': 'application/json',
+            }
+          }
+        );
+        
+        const status = response.status + ' ' + response.statusText;
+        const data = await response.json();
+        
+        if (response.ok) {
+          document.getElementById('test1').className = 'card success';
+          result.textContent = status + '\n\nData:\n' + JSON.stringify(data, null, 2);
+        } else {
+          document.getElementById('test1').className = 'card error';
+          result.textContent = status + '\n\nError: ' + JSON.stringify(data, null, 2);
+        }
+      } catch (e) {
+        document.getElementById('test1').className = 'card error';
+        result.textContent = 'Error: ' + e.message;
+      }
+    }
+  </script>
+</body>
+</html>

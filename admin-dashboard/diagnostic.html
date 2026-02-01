@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Henry Travel - Supabase Diagnostic</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: 'IBM Plex Mono', monospace; 
+      background: #FAFAFA; 
+      padding: 40px; 
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 24px; margin-bottom: 24px; }
+    h2 { font-size: 16px; margin: 24px 0 12px 0; }
+    .card { 
+      background: #FFF; 
+      border: 1px solid #E5E5E5; 
+      padding: 24px; 
+      margin-bottom: 16px; 
+    }
+    .success { background: #D4EDDA; border-color: #28a745; }
+    .error { background: #F8D7DA; border-color: #dc3545; }
+    .pending { background: #FFF3CD; border-color: #ffc107; }
+    pre { 
+      background: #1A1A1A; 
+      color: #FAFAFA; 
+      padding: 16px; 
+      font-size: 11px; 
+      overflow: auto; 
+      max-height: 300px;
+      margin-top: 12px;
+    }
+    button { 
+      padding: 12px 24px; 
+      background: #1A1A1A; 
+      color: #FFF; 
+      border: none; 
+      cursor: pointer; 
+      font-family: inherit; 
+      font-size: 12px; 
+      margin-right: 8px;
+    }
+    button:hover { background: #333; }
+    .btn-primary { background: #0066FF; }
+    .btn-primary:hover { background: #0052CC; }
+    .btn-danger { background: #dc3545; }
+    .btn-danger:hover { background: #c82333; }
+    .status-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .status-dot.green { background: #28a745; }
+    .status-dot.red { background: #dc3545; }
+    .status-dot.yellow { background: #ffc107; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #E5E5E5; font-size: 12px; }
+    th { background: #F5F5F5; font-weight: 600; }
+    img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>🔧 Henry Travel - Supabase Diagnostic</h1>
+  
+  <div class="card" id="status-card">
+    <h2>Connection Status</h2>
+    <p>Click the button below to test your Supabase connection and fix any issues.</p>
+    <div style="margin-top: 16px;">
+      <button class="btn-primary" onclick="runFullDiagnostic()">🔍 Run Full Diagnostic</button>
+      <button class="btn-danger" onclick="fixAndInsert()">🛠 Fix Schema & Insert Data</button>
+    </div>
+    <div id="results" style="margin-top: 16px;"></div>
+  </div>
+
+  <div class="card" id="data-card" style="display: none;">
+    <h2>Current Data</h2>
+    <div id="data-results"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://erhvmlxdcplrhmmuboxo.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_Lt7xsPkx9HGvh_udcekpxw_CmnP_zI4';
+
+    function log(message, type = 'info') {
+      const results = document.getElementById('results');
+      const color = type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#666';
+      results.innerHTML += `<p style="color: ${color}; margin: 4px 0;">${message}</p>`;
+      console.log(message);
+    }
+
+    function showData(data, title) {
+      const card = document.getElementById('data-card');
+      const results = document.getElementById('data-results');
+      card.style.display = 'block';
+      
+      if (!data || data.length === 0) {
+        results.innerHTML = '<p>No data found.</p>';
+        return;
+      }
+
+      let html = `<h3>${title} (${data.length} items)</h3><table><thead><tr>`;
+      
+      // Headers
+      Object.keys(data[0]).forEach(key => {
+        html += `<th>${key}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+      
+      // Rows
+      data.forEach(row => {
+        html += '<tr>';
+        Object.values(row).forEach((val, i) => {
+          const key = Object.keys(row)[i];
+          if (key.includes('url') || key.includes('image')) {
+            html += `<td><img src="${val || ''}" onerror="this.style.display='none'"></td>`;
+          } else {
+            html += `<td>${val || '-'}</td>`;
+          }
+        });
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      results.innerHTML = html;
+    }
+
+    async function apiRequest(endpoint, method = 'GET', body = null) {
+      const options = {
+        method,
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      };
+      
+      if (body) {
+        options.body = JSON.stringify(body);
+      }
+      
+      const response = await fetch(`${SUPABASE_URL}${endpoint}`, options);
+      const data = await response.json().catch(() => null);
+      return { status: response.status, data };
+    }
+
+    async function runFullDiagnostic() {
+      document.getElementById('results').innerHTML = '';
+      log('🔄 Starting diagnostic...', 'info');
+      
+      // Test 1: Check connection
+      log('1. Testing Supabase connection...');
+      const galleriesResult = await apiRequest('/rest/v1/galleries?select=*');
+      
+      if (galleriesResult.status === 200) {
+        log('✅ Supabase connection successful!', 'success');
+        showData(galleriesResult.data, 'Galleries');
+        
+        if (galleriesResult.data && galleriesResult.data.length > 0) {
+          log(`📁 Found ${galleriesResult.data.length} galleries`, 'success');
+          
+          // Check photos for first gallery
+          const firstGallery = galleriesResult.data[0];
+          const photosResult = await apiRequest(`/rest/v1/photos?gallery_id=eq.${firstGallery.id}&select=*`);
+          
+          if (photosResult.status === 200) {
+            showData(photosResult.data, `Photos in "${firstGallery.title}"`);
+            log(`📷 Found ${photosResult.data.length} photos`, 'success');
+          }
+        } else {
+          log('📭 No galleries found - click "Fix Schema & Insert Data" to add sample data', 'error');
+        }
+      } else {
+        log(`❌ Supabase error: ${galleriesResult.status}`, 'error');
+        log(`   ${JSON.stringify(galleriesResult.data)}`, 'error');
+      }
+    }
+
+    async function fixAndInsert() {
+      document.getElementById('results').innerHTML = '';
+      log('🛠 Fixing schema and inserting data...', 'info');
+      
+      // Step 1: Add missing columns to photos table
+      log('1. Adding missing columns to photos table...');
+      const alterResult = await apiRequest('/rest/v1/rpc/exec_sql', 'POST', {
+        sql: `
+          ALTER TABLE photos ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT TRUE;
+          ALTER TABLE photos ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT FALSE;
+          ALTER TABLE photos ADD COLUMN IF NOT EXISTS views INTEGER DEFAULT 0;
+          ALTER TABLE photos ADD COLUMN IF NOT EXISTS likes INTEGER DEFAULT 0;
+          ALTER TABLE photos ADD COLUMN IF NOT EXISTS shares INTEGER DEFAULT 0;
+        `
+      });
+      
+      if (alterResult.status >= 400) {
+        log('   Note: RPC may not be enabled, continuing anyway...');
+      } else {
+        log('   Columns added successfully');
+      }
+      
+      // Step 2: Insert galleries if they don't exist
+      log('2. Inserting galleries...');
+      const galleries = [
+        { id: '11111111-1111-1111-1111-111111111111', title: 'Varanasi', slug: 'varanasi', description: 'A visual journey through the ghats of the holy city', is_published: true, is_active: true },
+        { id: '22222222-2222-2222-2222-222222222222', title: 'Masai Mara', slug: 'masai-mara', description: 'Wildlife encounters in the great savanna', is_published: true, is_active: true }
+      ];
+      
+      for (const g of galleries) {
+        const result = await apiRequest('/rest/v1/galleries', 'POST', g);
+        if (result.status >= 400) {
+          log(`   Warning: Could not insert ${g.title}: ${result.status}`, 'error');
+        } else {
+          log(`   ✅ ${g.title} inserted`);
+        }
+      }
+      
+      // Step 3: Insert photos
+      log('3. Inserting photos...');
+      const photos = [
+        { id: 'a1111111-1111-1111-1111-111111111111', gallery_id: '22222222-2222-2222-2222-222222222222', image_url: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?w=800', alt_text: 'Lion in Serengeti', field_journal: 'Male lion resting in the afternoon heat, scanning the horizon for his pride.', display_order: 1, is_published: true, views: 1247, likes: 89, shares: 12 },
+        { id: 'b2222222-2222-2222-2222-222222222222', gallery_id: '22222222-2222-2222-2222-222222222222', image_url: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=800', alt_text: 'Elephant family', field_journal: 'Matriarch leading herd to water hole during golden hour.', display_order: 2, is_published: true, views: 892, likes: 67, shares: 8 },
+        { id: 'c3333333-3333-3333-3333-333333333333', gallery_id: '22222222-2222-2222-2222-222222222222', image_url: 'https://images.unsplash.com/photo-1504618223053-559bdef9dd5a?w=800', alt_text: 'Zebra migration', field_journal: 'Zebras on the move during the Great Migration.', display_order: 3, is_published: true, views: 2103, likes: 156, shares: 34 }
+      ];
+      
+      for (const p of photos) {
+        const result = await apiRequest('/rest/v1/photos', 'POST', p);
+        if (result.status >= 400) {
+          log(`   Warning: Could not insert photo: ${result.status}`, 'error');
+        } else {
+          log(`   ✅ Photo ${p.display_order} inserted`);
+        }
+      }
+      
+      // Step 4: Verify
+      log('4. Verifying data...');
+      const verifyResult = await apiRequest('/rest/v1/galleries?select=*');
+      if (verifyResult.status === 200) {
+        showData(verifyResult.data, 'Galleries after insert');
+        log(`✅ Done! Found ${verifyResult.data.length} galleries`, 'success');
+        log('📝 Now refresh the main dashboard to see your data!', 'success');
+      }
+    }
+
+    // Auto-run on load
+    console.log('Henry Travel - Supabase Diagnostic loaded');
+    console.log('Click "Run Full Diagnostic" to test your Supabase connection');
+  </script>
+</body>
+</html>

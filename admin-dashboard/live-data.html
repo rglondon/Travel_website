@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Henry Travel - Live Data</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'IBM Plex Mono', monospace; background: #FAFAFA; }
+    .sidebar { width: 280px; background: #FFF; border-right: 1px solid #E5E5E5; position: fixed; left: 0; top: 0; bottom: 0; overflow: auto; }
+    .main { margin-left: 280px; min-height: 100vh; }
+    .header { padding: 16px 24px; background: #FFF; border-bottom: 1px solid #E5E5E5; display: flex; justify-content: space-between; align-items: center; }
+    .grid { padding: 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+    .photo { position: relative; aspect-ratio: 4/3; background: #FFF; border: 1px solid #E5E5E5; overflow: hidden; }
+    .photo img { width: 100%; height: 100%; object-fit: cover; }
+    .stats { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); color: #FFF; font-size: 10px; display: flex; gap: 12px; }
+    .order { position: absolute; top: 8px; left: 8px; width: 24px; height: 24px; background: #1A1A1A; color: #FFF; font-size: 10px; display: flex; align-items: center; justify-content: center; border-radius: 2px; }
+    .title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .desc { font-size: 11px; color: #666; }
+    .section-title { padding: 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; border-bottom: 1px solid #E5E5E5; }
+    .item { padding: 12px 16px; cursor: pointer; }
+    .item:hover { background: #F5F5F5; }
+    .item.selected { background: #F5F5F5; }
+    .status { padding: 4px 8px; font-size: 10px; border-radius: 2px; display: inline-block; margin-left: 8px; }
+    .status.live { background: #00D4AA; color: #FFF; }
+    .status.error { background: #FF4444; color: #FFF; }
+    .status.checking { background: #FFA500; color: #FFF; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="section-title">
+      Projects <span id="status" class="status checking">CHECKING</span>
+    </div>
+    <div id="galleries"></div>
+  </div>
+  
+  <div class="main">
+    <div class="header">
+      <div>
+        <h2 id="gallery-title" style="margin: 0;">Select a project</h2>
+        <div id="gallery-desc" style="font-size: 11px; color: #666; margin-top: 4px;"></div>
+      </div>
+      <div id="stats" style="display: flex; gap: 24px; font-size: 12px;">
+        <span>PHOTOS</span>
+        <span>VIEWS</span>
+      </div>
+    </div>
+    <div class="grid" id="photos"></div>
+  </div>
+
+  <script>
+    const URL = 'https://erhvmlxdcplrhmmuboxo.supabase.co';
+    const KEY = 'sb_publishable_Lt7xsPkx9HGvh_udcekpxw_CmnP_zI4';
+    
+    let galleries = [];
+    let photos = [];
+    let selectedGalleryId = null;
+    
+    async function fetchAPI(endpoint) {
+      const response = await fetch(URL + endpoint, {
+        headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY }
+      });
+      if (!response.ok) {
+        console.error('Error:', response.status, response.statusText);
+        const text = await response.text();
+        console.error('Response:', text);
+        throw new Error(response.status + ' ' + response.statusText);
+      }
+      return response.json();
+    }
+    
+    async function loadGalleries() {
+      document.getElementById('status').textContent = 'CHECKING';
+      document.getElementById('status').className = 'status checking';
+      
+      try {
+        galleries = await fetchAPI('/rest/v1/galleries?is_active=eq.true&select=*');
+        console.log('Galleries:', galleries);
+        
+        const container = document.getElementById('galleries');
+        container.innerHTML = galleries.map(g => 
+          `<div class="item" onclick="selectGallery('${g.id}')" id="item-${g.id}">
+            <div class="title">${g.title}</div>
+            <div class="desc">${g.description || ''}</div>
+          </div>`
+        ).join('');
+        
+        document.getElementById('status').textContent = '● LIVE';
+        document.getElementById('status').className = 'status live';
+        
+        if (galleries.length > 0) {
+          selectGallery(galleries[0].id);
+        }
+      } catch (e) {
+        console.error('Failed:', e.message);
+        document.getElementById('status').textContent = '● ERROR: ' + e.message;
+        document.getElementById('status').className = 'status error';
+      }
+    }
+    
+    function selectGallery(id) {
+      selectedGalleryId = id;
+      const g = galleries.find(x => x.id === id);
+      
+      // Update UI
+      document.querySelectorAll('.item').forEach(x => x.classList.remove('selected'));
+      const item = document.getElementById('item-' + id);
+      if (item) item.classList.add('selected');
+      
+      document.getElementById('gallery-title').textContent = g?.title || 'Select a project';
+      document.getElementById('gallery-desc').textContent = g?.description || '';
+      
+      loadPhotos(id);
+    }
+    
+    async function loadPhotos(galleryId) {
+      try {
+        photos = await fetchAPI('/rest/v1/photos?gallery_id=eq.' + galleryId + '&order=display_order.asc');
+        console.log('Photos:', photos);
+        
+        document.getElementById('photos').innerHTML = photos.map(p => `
+          <div class="photo">
+            <img src="${p.image_url}" alt="${p.alt_text || ''}" onerror="this.src='https://via.placeholder.com/400x300?text=Error'">
+            <div class="order">${p.display_order || 0}</div>
+            <div class="stats">
+              <span>👁 ${p.views || 0}</span>
+              <span>♥ ${p.likes || 0}</span>
+              <span>↗ ${p.shares || 0}</span>
+            </div>
+          </div>
+        `).join('');
+        
+        const totalViews = photos.reduce((s, p) => s + (p.views || 0), 0);
+        document.getElementById('stats').innerHTML = `
+          <span><strong>${photos.length}</strong> PHOTOS</span>
+          <span><strong>${totalViews}</strong> VIEWS</span>
+        `;
+      } catch (e) {
+        console.error('Failed to load photos:', e.message);
+        document.getElementById('photos').innerHTML = '<p style="padding: 48px; color: #999; grid-column: 1/-1;">Error loading photos: ' + e.message + '</p>';
+      }
+    }
+    
+    // Start
+    loadGalleries();
+  </script>
+</body>
+</html>
