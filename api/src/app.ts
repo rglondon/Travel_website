@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 
 import photoRoutes from './routes/photoRoutes';
+import galleryRoutes from "./routes/galleryRoutes";
 import adminRoutes from './routes/adminRoutes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
@@ -58,6 +59,7 @@ app.get('/admin/*', (req, res) => {
 
 // API routes
 app.use('/api/photos', photoRoutes);
+app.use('/api/galleries', galleryRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Error handling
