@@ -84,14 +84,14 @@ travel-website/
 - [x] 1.7 Commit and push to GitHub
 
 ### Phase 2: API Integration
-- [ ] 2.1 Create `galleryApi.ts` service in frontend
-- [ ] 2.2 Add GalleryModel to backend API (if not exists)
-- [ ] 2.3 Add gallery routes to backend API (if not exists)
-- [ ] 2.4 Update Home.tsx to fetch galleries dynamically
-- [ ] 2.5 Update SafariGallery.tsx to accept photos as props
-- [ ] 2.6 Remove hardcoded data from safari.ts
-- [ ] 2.7 Add environment variables for API URL
-- [ ] 2.8 Test API integration end-to-end
+- [x] 2.1 Create `galleryApi.ts` service in frontend
+- [x] 2.2 Add GalleryModel to backend API (if not exists)
+- [x] 2.3 Add gallery routes to backend API (if not exists)
+- [x] 2.4 Update Home.tsx to fetch galleries dynamically
+- [x] 2.5 Update SafariGallery.tsx to accept photos as props
+- [x] 2.6 Remove hardcoded data from safari.ts
+- [x] 2.7 Add environment variables for API URL
+- [x] 2.8 Test API integration end-to-end
 
 ### Phase 3: Code Review & Improvements
 - [ ] 3.1 Review frontend component structure
@@ -184,7 +184,7 @@ If issues occur during integration:
 | Phase | Completed | Date | Notes |
 |-------|-----------|------|-------|
 | Phase 1 | ✅ | 2026-02-02 | Repository consolidated |
-| Phase 2 | ⏳ | - | - |
+| Phase 2 | ✅ | 2026-02-02 | API integrated |
 | Phase 3 | ⏳ | - | - |
 | Phase 4 | ⏳ | - | - |
 | Phase 5 | ⏳ | - | - |
