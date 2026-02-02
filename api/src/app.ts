@@ -47,14 +47,14 @@ app.get('/health', (req, res) => {
 });
 
 // Serve admin dashboard assets from root /assets path
-app.use('/assets', express.static(path.join(__dirname, '../admin/dist/assets')));
+app.use('/assets', express.static(path.join(__dirname, '../../admin/dist/assets')));
 
 // Admin Dashboard static files (main app)
-app.use('/admin', express.static(path.join(__dirname, '../admin/dist')));
+app.use('/admin', express.static(path.join(__dirname, '../../admin/dist')));
 
 // Serve index.html for admin routes (SPA fallback)
 app.get('/admin/*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../admin/dist/index.html'));
+  res.sendFile(path.join(__dirname, '../../admin/dist/index.html'));
 });
 
 // API routes
