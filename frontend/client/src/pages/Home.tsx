@@ -204,6 +204,15 @@ export default function Home() {
                     <p className="font-mono text-[10px] text-muted-foreground/60">Sign in for personalized lightboxes</p>
                   </div>
                   <div className="p-2">
+                    <a
+                      href="http://95.216.147.140:3001/admin"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full text-left px-3 py-2 font-mono text-xs hover:bg-[#00ff00]/20 rounded transition-colors text-[#00ff00]"
+                    >
+                      → Admin Dashboard
+                    </a>
+                    <div className="border-t border-border/30 my-1" />
                     <button className="w-full text-left px-3 py-2 font-mono text-xs hover:bg-muted/50 rounded transition-colors">
                       Sign In
                     </button>
